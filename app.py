@@ -19,12 +19,14 @@ def sign(payload):
 
 def call_3commas(method, path, body=""):
     timestamp = str(int(time.time() * 1000))
-    payload = timestamp + method + path + body
+    recv_window = "60000"
+    payload = f"{method}\n{path}\n{timestamp}\n{recv_window}\n{body}"
     url = "https://trade.3commas.io" + path
     headers = {
         "X-API-Key": API_KEY,
         "X-Signature": sign(payload),
         "X-Timestamp": timestamp,
+        "X-Recv-Window": recv_window,
         "Content-Type": "application/json"
     }
     if method == "POST":
@@ -41,12 +43,10 @@ def webhook():
     text = data.get("text", "").upper()
     
     if "LONG" in text:
-        # Oprește Short (pause), pornește Long (resume)
         call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", '{"stopCondition":"stop_only"}')
         call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", "")
         return "Switched to LONG", 200
     elif "SHORT" in text:
-        # Oprește Long, pornește Short
         call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", '{"stopCondition":"stop_only"}')
         call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", "")
         return "Switched to SHORT", 200
