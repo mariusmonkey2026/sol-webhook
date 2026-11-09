@@ -12,7 +12,9 @@ BOT_SHORT = "254dcff134ef0233f4102b75"
 BOT_LONG = "254dcff134ef02332affc6c3"
 
 def sign(path, data=""):
-    msg = path + data
+    msg = path
+    if data:
+        msg += data
     return hmac.new(API_SECRET.encode(), msg.encode(), hashlib.sha256).hexdigest()
 
 def call_3commas(method, path):
@@ -25,6 +27,7 @@ def call_3commas(method, path):
         r = requests.post(url, headers=headers)
     else:
         r = requests.get(url, headers=headers)
+    print(r.text)  
     return r.text
 
 @app.route("/webhook", methods=["POST"])
