@@ -3,6 +3,8 @@ import hmac
 import hashlib
 import requests
 import os
+import time
+import base64
 
 app = Flask(__name__)
 
@@ -11,23 +13,25 @@ API_SECRET = "QQKlLHrWUwfWShlOG9kYOPkC98qoDYeiKcAjl8FP2nQjzX9yxyShL4D7qZQS048xCM
 BOT_SHORT = "254dcff134ef0233f4102b75"
 BOT_LONG = "254dcff134ef02332affc6c3"
 
-def sign(path, data=""):
-    msg = path
-    if data:
-        msg += data
-    return hmac.new(API_SECRET.encode(), msg.encode(), hashlib.sha256).hexdigest()
+def sign(payload):
+    signature = hmac.new(API_SECRET.encode(), payload.encode(), hashlib.sha256).digest()
+    return base64.b64encode(signature).decode()
 
 def call_3commas(method, path):
+    timestamp = str(int(time.time() * 1000))
+    payload = timestamp + method + path
     url = "https://api.3commas.io" + path
     headers = {
-        "APIKEY": API_KEY,
-        "Signature": sign(path)
+        "X-API-Key": API_KEY,
+        "X-Signature": sign(payload),
+        "X-Timestamp": timestamp
     }
     if method == "POST":
         r = requests.post(url, headers=headers)
     else:
         r = requests.get(url, headers=headers)
-    print(r.text)  
+    print(f"Status: {r.status_code}")
+    print(r.text[:500])
     return r.text
 
 @app.route("/webhook", methods=["POST"])
