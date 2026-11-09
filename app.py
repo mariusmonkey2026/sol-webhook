@@ -17,17 +17,18 @@ def sign(payload):
     signature = hmac.new(API_SECRET.encode(), payload.encode(), hashlib.sha256).digest()
     return base64.b64encode(signature).decode()
 
-def call_3commas(method, path):
+def call_3commas(method, path, body=""):
     timestamp = str(int(time.time() * 1000))
-    payload = timestamp + method + path
-    url = "https://api.3commas.io" + path
+    payload = timestamp + method + path + body
+    url = "https://trade.3commas.io" + path
     headers = {
         "X-API-Key": API_KEY,
         "X-Signature": sign(payload),
-        "X-Timestamp": timestamp
+        "X-Timestamp": timestamp,
+        "Content-Type": "application/json"
     }
     if method == "POST":
-        r = requests.post(url, headers=headers)
+        r = requests.post(url, headers=headers, data=body)
     else:
         r = requests.get(url, headers=headers)
     print(f"Status: {r.status_code}")
@@ -40,12 +41,14 @@ def webhook():
     text = data.get("text", "").upper()
     
     if "LONG" in text:
-        call_3commas("POST", f"/public/api/ver1/bots/{BOT_SHORT}/disable")
-        call_3commas("POST", f"/public/api/ver1/bots/{BOT_LONG}/enable")
+        # Oprește Short (pause), pornește Long (resume)
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", '{"stopCondition":"stop_only"}')
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", "")
         return "Switched to LONG", 200
     elif "SHORT" in text:
-        call_3commas("POST", f"/public/api/ver1/bots/{BOT_LONG}/disable")
-        call_3commas("POST", f"/public/api/ver1/bots/{BOT_SHORT}/enable")
+        # Oprește Long, pornește Short
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", '{"stopCondition":"stop_only"}')
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", "")
         return "Switched to SHORT", 200
     return "Ignored", 200
 
