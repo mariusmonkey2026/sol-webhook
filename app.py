@@ -33,8 +33,8 @@ def call_3commas(method, path, body=""):
         r = requests.post(url, headers=headers, data=body)
     else:
         r = requests.get(url, headers=headers)
-    print(f"Status: {r.status_code}")
-    print(r.text[:500])
+    print(f"Status: {r.status_code} | {path}")
+    print(r.text[:300])
     return r.text
 
 @app.route("/webhook", methods=["POST"])
@@ -43,11 +43,13 @@ def webhook():
     text = data.get("text", "").upper()
     
     if "LONG" in text:
-        call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", '{"stopCondition":"stop_only"}')
+        # Oprește Short complet (închide pozițiile) și pornește Long
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", '{"stopCondition":"stop_and_close_all"}')
         call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", "")
         return "Switched to LONG", 200
     elif "SHORT" in text:
-        call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", '{"stopCondition":"stop_only"}')
+        # Oprește Long complet și pornește Short
+        call_3commas("POST", f"/open_api/dca_bots/{BOT_LONG}/switch-pause", '{"stopCondition":"stop_and_close_all"}')
         call_3commas("POST", f"/open_api/dca_bots/{BOT_SHORT}/switch-pause", "")
         return "Switched to SHORT", 200
     return "Ignored", 200
